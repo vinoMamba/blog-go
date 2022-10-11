@@ -14,6 +14,7 @@ func handlerFunc(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "<h1>Hello, 这里是关于页面</h1>")
 		fmt.Fprint(w, "请求的路径为:"+r.URL.Path)
 	} else {
+		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprint(w, "404")
 	}
 }
