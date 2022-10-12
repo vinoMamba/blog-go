@@ -8,19 +8,15 @@ import (
 )
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "<h1>Hello, 欢迎来到 goblog！</h1>")
 }
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "<h1>关于我们</h1>")
 }
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "<h1>404 页面未找到</h1>")
 }
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	vars := mux.Vars(r)
 	fmt.Printf("vars: %#v", vars)
 	id := vars["id"]
@@ -28,12 +24,18 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, id)
 }
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "<h1>文章列表</h1>")
 }
 func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "<h1>创建文章</h1>")
+}
+
+func forceHTMLMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -46,6 +48,7 @@ func main() {
 	router.HandleFunc("/articles", articlesCreateHandler).Methods("POST").Name("articles.create")
 
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
+	router.Use(forceHTMLMiddleware)
 
 	homeUrl, _ := router.Get("home").URL()
 	fmt.Println(homeUrl)
