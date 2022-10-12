@@ -144,10 +144,20 @@ func checkError(err error) {
 		log.Fatal(err)
 	}
 }
+func createTables() {
+	createArticlesSQL := `CREATE TABLE IF NOT EXISTS articles(
+		id SERIAL PRIMARY KEY,
+		title VARCHAR(255) NOT NULL,
+		body TEXT NOT NULL
+		);`
+	_, err := db.Exec(createArticlesSQL)
+	checkError(err)
+}
 
 func main() {
 
 	initDB()
+	createTables()
 
 	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
 	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")
