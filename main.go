@@ -1,16 +1,21 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 )
 
 var router = mux.NewRouter()
+var db *sql.DB
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "<h1>Hello, 欢迎来到 goblog！</h1>")
@@ -114,7 +119,36 @@ func removeTrilingSlash(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func initDB() {
+	var err error
+	connStr := "host=localhost user=mangosteen password=123456 dbname=mangosteen_dev port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	// 准备数据库连接池
+	db, err = sql.Open("postgres", connStr)
+	checkError(err)
+
+	// 设置最大连接数
+	db.SetMaxOpenConns(25)
+	// 设置最大空闲连接数
+	db.SetMaxIdleConns(25)
+	// 设置每个链接的过期时间
+	db.SetConnMaxLifetime(5 * time.Minute)
+
+	// 尝试连接，失败会报错
+	err = db.Ping()
+	checkError(err)
+}
+
+func checkError(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
+
+	initDB()
+
 	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
 	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")
 
