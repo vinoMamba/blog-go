@@ -13,9 +13,11 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/vinoMamba/goblog/pkg/logger"
+	"github.com/vinoMamba/goblog/pkg/route"
 )
 
-var router = mux.NewRouter()
+var router *mux.Router
 var db *sql.DB
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,25 +54,25 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		tmpl.Execute(w, article)
 	default:
-		checkError(err)
+		logger.LogError(err)
 	}
 }
 
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
 	sqlStatement := `SELECT * FROM articles`
 	rows, err := db.Query(sqlStatement)
-	checkError(err)
+	logger.LogError(err)
 	defer rows.Close()
 
 	var articles []Article
 	for rows.Next() {
 		var article Article
 		err = rows.Scan(&article.ID, &article.Title, &article.Body)
-		checkError(err)
+		logger.LogError(err)
 		articles = append(articles, article)
 	}
 	err = rows.Err()
-	checkError(err)
+	logger.LogError(err)
 	tmpl, err := template.ParseFiles("./resources/views/articles/index.html")
 	if err != nil {
 		panic(err)
@@ -104,7 +106,7 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 		if lastInsertID > 0 {
 			fmt.Fprint(w, "插入成功，ID 为"+strconv.FormatInt(lastInsertID, 10))
 		} else {
-			checkError(err)
+			logger.LogError(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "500 服务器内部错误")
 		}
@@ -167,7 +169,7 @@ func initDB() {
 	connStr := "host=localhost user=mangosteen password=123456 dbname=mangosteen_dev port=5432 sslmode=disable TimeZone=Asia/Shanghai"
 	// 准备数据库连接池
 	db, err = sql.Open("postgres", connStr)
-	checkError(err)
+	logger.LogError(err)
 
 	// 设置最大连接数
 	db.SetMaxOpenConns(25)
@@ -178,14 +180,9 @@ func initDB() {
 
 	// 尝试连接，失败会报错
 	err = db.Ping()
-	checkError(err)
+	logger.LogError(err)
 }
 
-func checkError(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 func createTables() {
 	createArticlesSQL := `CREATE TABLE IF NOT EXISTS articles(
 		id SERIAL PRIMARY KEY,
@@ -193,7 +190,7 @@ func createTables() {
 		body TEXT NOT NULL
 		);`
 	_, err := db.Exec(createArticlesSQL)
-	checkError(err)
+	logger.LogError(err)
 }
 func saveArticleToDB(title string, body string) (int64, error) {
 	sqlStatement := `INSERT INTO articles (title, body) VALUES ($1, $2) RETURNING id`
@@ -205,9 +202,10 @@ func saveArticleToDB(title string, body string) (int64, error) {
 	return id, nil
 }
 func main() {
-
 	initDB()
 	createTables()
+	route.InitializeRouter()
+	router = route.Router
 
 	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
 	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")
