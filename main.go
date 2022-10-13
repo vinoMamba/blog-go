@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -61,11 +62,14 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 		errors["body"] = "内容长度需大于或等于 10 个字节"
 	}
 	if len(errors) == 0 {
-		fmt.Fprint(w, "验证通过!<br>")
-		fmt.Fprintf(w, "title 的值为: %v <br>", title)
-		fmt.Fprintf(w, "title 的长度为: %v <br>", len(title))
-		fmt.Fprintf(w, "body 的值为: %v <br>", body)
-		fmt.Fprintf(w, "body 的长度为: %v <br>", len(body))
+		lastInsertID, err := saveArticleToDB(title, body)
+		if lastInsertID > 0 {
+			fmt.Fprint(w, "插入成功，ID 为"+strconv.FormatInt(lastInsertID, 10))
+		} else {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 服务器内部错误")
+		}
 	} else {
 		storeURL, _ := router.Get("articles.store").URL()
 		data := ArticlesFormData{
@@ -153,7 +157,15 @@ func createTables() {
 	_, err := db.Exec(createArticlesSQL)
 	checkError(err)
 }
-
+func saveArticleToDB(title string, body string) (int64, error) {
+	sqlStatement := `INSERT INTO articles (title, body) VALUES ($1, $2) RETURNING id`
+	var id int64
+	err := db.QueryRow(sqlStatement, title, body).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
 func main() {
 
 	initDB()
