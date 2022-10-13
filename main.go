@@ -20,16 +20,6 @@ import (
 var router *mux.Router
 var db *sql.DB
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "<h1>Hello, 欢迎来到 goblog！</h1>")
-}
-func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "<h1>关于我们</h1>")
-}
-func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "<h1>404 页面未找到</h1>")
-}
-
 type Article struct {
 	ID    int64
 	Title string
@@ -180,15 +170,11 @@ func main() {
 	route.Initialize()
 	router = route.Router
 
-	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
-	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")
-
 	router.HandleFunc("/articles/{id:[0-9]+}", articlesShowHandler).Methods("GET").Name("articles.show")
 	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
 	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
 	router.HandleFunc("/articles/create", articlesCreateHandler).Methods("GET").Name("articles.create")
 
-	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 	router.Use(forceHTMLMiddleware)
 
 	http.ListenAndServe(":3000", removeTrilingSlash(router))
