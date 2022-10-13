@@ -10,7 +10,6 @@ import (
 func TestHomePage(t *testing.T) {
 	baseURL := "http://localhost:3000"
 
-	// 1. 请求 —— 模拟用户访问浏览器
 	var (
 		resp *http.Response
 		err  error
