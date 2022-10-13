@@ -28,12 +28,32 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "<h1>404 页面未找到</h1>")
 }
 
+type Article struct {
+	ID    int64
+	Title string
+	Body  string
+}
+
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	fmt.Printf("vars: %#v", vars)
 	id := vars["id"]
-	fmt.Fprint(w, "<h1>文章</h1>")
-	fmt.Fprint(w, id)
+	// 从数据库中读取数据
+	sqlStatement := `SELECT * FROM articles WHERE id=$1`
+	row := db.QueryRow(sqlStatement, id)
+	var article Article
+	err := row.Scan(&article.ID, &article.Title, &article.Body)
+	switch err {
+	case sql.ErrNoRows:
+		fmt.Fprint(w, "没有这篇文章")
+	case nil:
+		tmpl, err := template.ParseFiles("./resources/views/articles/show.html")
+		if err != nil {
+			log.Fatal(err)
+		}
+		tmpl.Execute(w, article)
+	default:
+		checkError(err)
+	}
 }
 
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
