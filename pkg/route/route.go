@@ -4,7 +4,7 @@ import "github.com/gorilla/mux"
 
 var Router *mux.Router
 
-func InitializeRouter() {
+func Initialize() {
 	Router = mux.NewRouter()
 }
 

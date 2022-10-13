@@ -9,10 +9,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/vinoMamba/goblog/pkg/database"
 	"github.com/vinoMamba/goblog/pkg/logger"
 	"github.com/vinoMamba/goblog/pkg/route"
 )
@@ -164,34 +164,6 @@ func removeTrilingSlash(next http.Handler) http.Handler {
 	})
 }
 
-func initDB() {
-	var err error
-	connStr := "host=localhost user=mangosteen password=123456 dbname=mangosteen_dev port=5432 sslmode=disable TimeZone=Asia/Shanghai"
-	// 准备数据库连接池
-	db, err = sql.Open("postgres", connStr)
-	logger.LogError(err)
-
-	// 设置最大连接数
-	db.SetMaxOpenConns(25)
-	// 设置最大空闲连接数
-	db.SetMaxIdleConns(25)
-	// 设置每个链接的过期时间
-	db.SetConnMaxLifetime(5 * time.Minute)
-
-	// 尝试连接，失败会报错
-	err = db.Ping()
-	logger.LogError(err)
-}
-
-func createTables() {
-	createArticlesSQL := `CREATE TABLE IF NOT EXISTS articles(
-		id SERIAL PRIMARY KEY,
-		title VARCHAR(255) NOT NULL,
-		body TEXT NOT NULL
-		);`
-	_, err := db.Exec(createArticlesSQL)
-	logger.LogError(err)
-}
 func saveArticleToDB(title string, body string) (int64, error) {
 	sqlStatement := `INSERT INTO articles (title, body) VALUES ($1, $2) RETURNING id`
 	var id int64
@@ -202,9 +174,10 @@ func saveArticleToDB(title string, body string) (int64, error) {
 	return id, nil
 }
 func main() {
-	initDB()
-	createTables()
-	route.InitializeRouter()
+	database.Initialize()
+	db = database.DB
+
+	route.Initialize()
 	router = route.Router
 
 	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
