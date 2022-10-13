@@ -12,4 +12,7 @@ func RegisterWebRoutes(router *mux.Router) {
 	router.HandleFunc("/", pc.Home).Methods("GET").Name("home")
 	router.HandleFunc("/about", pc.About).Methods("GET").Name("about")
 	router.NotFoundHandler = http.HandlerFunc(pc.NotFound)
+
+	ac := new(controllers.ArticlesController)
+	router.HandleFunc("/articles/{id:[0-9]+}", ac.Show).Methods("GET").Name("articles.show")
 }
